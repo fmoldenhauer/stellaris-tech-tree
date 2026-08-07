@@ -112,7 +112,7 @@
       const load_page = (param, title) => {
         history.pushState({pageID: param}, param, `${param}/`);
         document.title = title || param;
-        var assets_version = '20260713u';
+        var assets_version = '20260807a';
         $('<link>').appendTo('head').attr({
             type: 'text/css',
             rel: 'stylesheet',
@@ -201,6 +201,11 @@
       Parser code : <a href="https://github.com/LindaKuiper/stellaris-technology">Github</a> (forked from <a href="https://github.com/turanar/stellaris-technology">turanar</a>)<br/>
       Website code : <a href="https://github.com/LindaKuiper/stellaris-tech-tree">Github</a> (forked from <a href="https://github.com/turanar/stellaris-tech-tree">turanar</a>)<br/>
       Contributors : SlenderPlays, Tsudico & Turanar<br/>
+      </p>
+
+      <p>
+      Spotted something wrong, or have an idea to improve this?
+      <a href="https://github.com/LindaKuiper/stellaris-tech-tree/issues/new/choose" target="_blank" rel="noopener">Let me know here</a>.
       </p>
     </body>
 </html>

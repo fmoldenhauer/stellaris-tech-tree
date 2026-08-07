@@ -1,0 +1,69 @@
+name: Report a problem
+description: Something on the tech tree is wrong, missing, or does not work
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this!
+
+        Don't worry about which repository this belongs in — everything goes
+        here and gets moved if it turns out to be a parser issue.
+
+  - type: input
+    id: url
+    attributes:
+      label: Page address
+      description: Copy it from your browser's address bar. This tells us which game version you were looking at.
+      placeholder: https://lindakuiper.github.io/stellaris-tech-tree/?pegasus-4.4.6
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where did you see it?
+      options:
+        - Physics tree
+        - Society tree
+        - Engineering tree
+        - Anomalies
+        - Empire tab
+        - Research progress / check marks
+        - Somewhere else, or not sure
+    validations:
+      required: true
+
+  - type: input
+    id: subject
+    attributes:
+      label: Which technology or item?
+      description: The name exactly as the site shows it. Leave empty if it isn't about one specific technology.
+      placeholder: Hyper Relays
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to see?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What did you see instead?
+      description: If you know what the correct value should be according to the game, please say so.
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Screenshot
+      description: Very helpful for anything visual. Drag an image straight into this box to attach it.
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and system
+      placeholder: Chrome on Windows 11

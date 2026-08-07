@@ -568,6 +568,25 @@ span.tier-5 {
     pointer-events: none;
 }
 
+/* Report link, mirrors the version tag in the bottom-left corner */
+#report-problem {
+    position: fixed;
+    left: 10px;
+    bottom: 8px;
+    color: #9ab;
+    font-family: 'Arimo', Verdana;
+    font-size: 9pt;
+    background: rgba(40, 40, 40, 0.85);
+    padding: 3px 8px;
+    border-radius: 6px;
+    z-index: 10000;
+    text-decoration: none;
+}
+#report-problem:hover {
+    color: #66ccff;
+    text-decoration: underline;
+}
+
 /* Toast messages (save/load/remove feedback) */
 #toast-holder {
     position: fixed;

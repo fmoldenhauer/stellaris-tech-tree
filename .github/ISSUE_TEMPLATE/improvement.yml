@@ -1,0 +1,40 @@
+name: Suggest an improvement
+description: An idea to make the tech tree more useful
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Suggestions are welcome — including small ones.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: What does your idea concern?
+      options:
+        - The technology trees themselves
+        - The Empire tab
+        - Research progress / check marks
+        - Search
+        - Something else
+    validations:
+      required: true
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like to see?
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: What would that help you with?
+      description: Knowing the problem behind the idea often leads to a better solution.
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: Sketches, screenshots, or examples from other sites are all useful. Drag images straight into this box.
