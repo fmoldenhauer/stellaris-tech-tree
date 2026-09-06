@@ -675,6 +675,32 @@ span.tier-5 {
     margin-bottom: 20px;
 }
 
+.save-import {
+    border: 1px solid #6fcbb3;
+    border-radius: 6px;
+    background: #253b36;
+    padding: 18px;
+    margin-bottom: 24px;
+    color: #eee;
+    line-height: 1.5;
+}
+.save-import h2 { margin: 0 0 8px; color: #8fe3cd; }
+.save-import button, .save-import-context button {
+    color: #fff; background: #245e50; border: 1px solid #6fcbb3;
+    border-radius: 4px; padding: 8px 14px; margin: 8px 8px 0 0; cursor: pointer;
+}
+.save-import button:disabled { opacity: .5; cursor: default; }
+.save-import select, .save-import input { max-width: 100%; padding: 6px; }
+.save-import dl { display: grid; grid-template-columns: 160px 1fr; gap: 4px 12px; }
+.save-import dt { font-weight: bold; }
+.save-import dd { margin: 0; overflow-wrap: anywhere; }
+.save-import details, .save-import-context { margin: 10px 0; overflow-wrap: anywhere; }
+.save-import summary, .save-import-context summary { cursor: pointer; color: #8fe3cd; }
+.save-import details ul { max-height: 240px; overflow: auto; }
+.save-import-context pre { white-space: pre-wrap; max-height: 350px; overflow: auto; }
+.save-import-count { font-weight: bold; color: #8fe3cd; }
+@media (max-width: 550px) { .save-import dl { grid-template-columns: 1fr; } }
+
 .empire-reset-btn {
     font-family: 'Arimo', Verdana;
     font-size: 11pt;

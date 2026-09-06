@@ -30,6 +30,7 @@
     // ---- master switch -----------------------------------------------------
 
     function isActive() {
+        if (window.EmpireConfig && window.EmpireConfig.isActive) return window.EmpireConfig.isActive();
         try {
             return !!window.localStorage && localStorage.getItem(STORAGE_KEY) !== null;
         } catch (e) {
@@ -78,31 +79,34 @@
     // "my empire has none of these" - facts about it evaluate as unknown.
     // Once anything is selected in a section it becomes authoritative and the
     // unselected options really are false.
-    function specified(list) {
-        return !!list && list.length > 0;
+    function specified(list, cfg, field) {
+        if (cfg && cfg.save_context) return inList(cfg.known_fields, field);
+        return !!list && list.length > 0 || !!cfg && inList(cfg.known_fields, field);
     }
 
     function resolveFact(fact, value, cfg) {
         switch (fact) {
             case 'has_ethic':
-                return specified(cfg.ethics) ? inList(cfg.ethics, value) : UNKNOWN;
+                return specified(cfg.ethics, cfg, 'ethics') ? inList(cfg.ethics, value) : UNKNOWN;
             case 'has_authority':
                 return cfg.authority ? authEquals(cfg.authority, value) : UNKNOWN;
             case 'has_civic':
-                return specified(cfg.civics) ? inList(cfg.civics, value) : UNKNOWN;
+                return specified(cfg.civics, cfg, 'civics') ? inList(cfg.civics, value) : UNKNOWN;
             case 'has_origin':
                 return cfg.origin ? cfg.origin === value : UNKNOWN;
             case 'has_tradition':
-                return specified(cfg.traditions) ? inList(cfg.traditions, value) : UNKNOWN;
+                return specified(cfg.traditions, cfg, 'traditions') ? inList(cfg.traditions, value) : UNKNOWN;
             case 'has_ascension_perk':
-                return specified(cfg.ascension_perks) ? inList(cfg.ascension_perks, value) : UNKNOWN;
+                return specified(cfg.ascension_perks, cfg, 'ascension_perks') ? inList(cfg.ascension_perks, value) : UNKNOWN;
             case 'has_trait_in_council':
-                return specified(cfg.council_traits) ? inList(cfg.council_traits, value) : UNKNOWN;
+                return specified(cfg.council_traits, cfg, 'council_traits') ? inList(cfg.council_traits, value) : UNKNOWN;
             case 'host_has_dlc':
-                return window.EmpireConfig ? window.EmpireConfig.isDlcEnabled(value) : UNKNOWN;
-            case 'has_technology':       return !!checkedTechs[value];
+                if (cfg.save_context && !inList(cfg.known_fields, 'dlcs_disabled')) return UNKNOWN;
+                return !inList(cfg.dlcs_disabled, value);
+            case 'has_technology':
+                return !!checkedTechs[value] || !!cfg.save_context && inList(cfg.save_context.unmapped_technologies, value);
             case 'is_gestalt':
-                return specified(cfg.ethics) ? inList(cfg.ethics, 'ethic_gestalt_consciousness') : UNKNOWN;
+                return specified(cfg.ethics, cfg, 'ethics') ? inList(cfg.ethics, 'ethic_gestalt_consciousness') : UNKNOWN;
             case 'is_machine_empire':
             case 'is_mechanical_empire':
                 return cfg.authority ? authEquals(cfg.authority, 'machine_intelligence') : UNKNOWN;
@@ -122,9 +126,33 @@
         }
     }
 
+    // Only exact, single-scope descriptions whose save representation is known.
+    // Complex human-readable conditions must stay unknown, including negations.
+    function resolveSaveCondition(description, cfg) {
+        var context = cfg.save_context, match;
+        if (!context || typeof description !== 'string') return UNKNOWN;
+        match = /^Has the ([a-zA-Z0-9_]+) (country|global) flag$/.exec(description);
+        if (match) {
+            var flags = context[match[2] + '_flags'];
+            return Array.isArray(flags) ? inList(flags, match[1]) : UNKNOWN;
+        }
+        match = /^Number of owned planets is greater than (\d+)$/.exec(description);
+        if (match && context.owned_planets !== null) return context.owned_planets > Number(match[1]);
+        match = /^Number of cosmic storms encountered is lower than (\d+)$/.exec(description);
+        if (match && context.cosmic_storms != null) return context.cosmic_storms < Number(match[1]);
+        var types = { 'Is of country type: Fallen Empire': 'fallen_empire', 'Is of country type: Awakened Empire': 'awakened_fallen_empire' };
+        if (types[description]) return context.country_type ? context.country_type === types[description] : UNKNOWN;
+        if (description === 'Has the Curator Insight modifier') {
+            return Array.isArray(context.modifiers) ? inList(context.modifiers, 'curator_insight') : UNKNOWN;
+        }
+        var policies = { 'Has policy AI Outlawed': 'ai_outlawed', 'Has policy Robotic Workers Outlawed': 'robots_outlawed' };
+        if (policies[description]) return Array.isArray(context.policy_flags) ? inList(context.policy_flags, policies[description]) : UNKNOWN;
+        return UNKNOWN;
+    }
+
     function evalCond(cond, cfg) {
         if (cond === null || cond === undefined) return true;
-        if (cond.unknown !== undefined) return UNKNOWN;
+        if (cond.unknown !== undefined) return resolveSaveCondition(cond.unknown, cfg);
         if (cond.all) return combineAll(cond.all, cfg);
         if (cond.any) return combineAny(cond.any, cfg);
         if (cond.none) return combineNone(cond.none, cfg);
@@ -423,6 +451,8 @@
         schedule: schedule,
         // exposed for manual/testing use
         runNow: run,
+        evaluateCondition: evalCond,
+        evaluateTech: evaluateTech,
         _lastPassMs: null,
         _lastPassTouched: 0
     };

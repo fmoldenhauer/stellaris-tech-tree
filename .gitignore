@@ -1,2 +1,8 @@
 .idea
 CLAUDE.md
+node_modules/
+.local/
+*.sav
+gamestate
+test-results/
+playwright-report/

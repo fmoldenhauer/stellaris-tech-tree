@@ -24,12 +24,15 @@ $(document).ready(function () {
     function buildEmpirePage(options) {
         container.empty();
 
+        if (window.SaveImportUI) window.SaveImportUI.mount(container, options);
+
         container.append(
             $('<p>').addClass('empire-intro')
                 .text('Configure your empire; tech weights on the other tabs adjust to it. ' +
                       'Sections you leave empty count as "not specified": conditions about them ' +
                       'show a ? mark and do not change any weights. Once you select something in ' +
-                      'a section, the unselected options in it count as "my empire does not have this".')
+                      'a section, the unselected options in it count as "my empire does not have this". ' +
+                      'Imported sections can explicitly contain no selections; those count as known empty.')
         );
 
         var resetBtn = $('<button>')
@@ -82,6 +85,20 @@ $(document).ready(function () {
 
         window.EmpireConfig.onChange(renderAll);
         renderAll(window.EmpireConfig.get());
+
+        var context = $('<details>').addClass('save-import-context');
+        context.append($('<summary>').text('Imported save context'));
+        var contextText = $('<pre>');
+        var clearContext = $('<button>').attr('type', 'button').text('Clear imported context');
+        clearContext.on('click', function () { window.EmpireConfig.set({ save_context: null, known_fields: [] }); });
+        context.append($('<p>').text('Snapshot facts used alongside the editable inputs above. Reimport a newer save to update them.'), contextText, clearContext);
+        container.append(context);
+        function renderContext(config) {
+            context.toggle(!!config.save_context);
+            contextText.text(JSON.stringify(config.save_context, null, 2));
+        }
+        window.EmpireConfig.onChange(renderContext);
+        renderContext(window.EmpireConfig.get());
     }
 
     // Multi-select checkbox group (ethics, civics, traditions, council
@@ -106,6 +123,8 @@ $(document).ready(function () {
                 }
                 var patch = {};
                 patch[section.key] = current;
+                patch.known_fields = window.EmpireConfig.get().known_fields;
+                if (window.EmpireConfig.get().save_context && patch.known_fields.indexOf(section.key) === -1) patch.known_fields.push(section.key);
                 window.EmpireConfig.set(patch);
             });
 
@@ -186,7 +205,9 @@ $(document).ready(function () {
                 } else if (idx === -1) {
                     current.push(entry.key);
                 }
-                window.EmpireConfig.set({ dlcs_disabled: current });
+                var known = window.EmpireConfig.get().known_fields;
+                if (known.indexOf('dlcs_disabled') === -1) known.push('dlcs_disabled');
+                window.EmpireConfig.set({ dlcs_disabled: current, known_fields: known });
             });
 
             wrap.append(label);

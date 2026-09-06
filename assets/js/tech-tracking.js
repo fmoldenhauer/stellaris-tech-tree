@@ -108,7 +108,7 @@ function init_nodestatus(area) {
         var events = $._data($( this )[0], "events");
 
         if(undefined === events || undefined === events.click) {
-            $(this).on('click', function toggle_status() {
+            $(this).on('click', function toggle_status(event) {
                 // Empire engine: techs unavailable for the configured empire cannot be checked
                 if ($(this).closest('.node').hasClass('empire-unavailable')) {
                     return;
@@ -213,7 +213,60 @@ function updateResearch(area, name, active) {
 
     // Empire engine: a checkbox change can flip has_technology weight rules
     if (window.EmpireEval) window.EmpireEval.schedule();
+    if (window.ResearchState) window.ResearchState.schedulePersist();
 }
+
+// Exact snapshot replacement bypasses prerequisite cascades: event-granted
+// technologies need not include every prerequisite. Paint every rendered copy.
+window.ResearchState = (function () {
+    var timer, storageKey = 'researchSnapshot:' + location.pathname;
+    function get() {
+        var keys = [];
+        document.querySelectorAll('.node.tech').forEach(function (node) {
+            if (node.id && node.querySelector('div.node-status.active')) keys.push(node.id);
+        });
+        return Array.from(new Set(keys));
+    }
+    function persist() {
+        if (!window.techTreesLoaded) return;
+        try { localStorage.setItem(storageKey, JSON.stringify(get())); }
+        catch (e) { showToast('Research changed, but browser storage is unavailable. Keep this page open.', true); }
+    }
+    function replace(keys, save) {
+        var selected = new Set(keys);
+        document.querySelectorAll('.node.tech').forEach(function (node) {
+            var active = selected.has(node.id);
+            node.classList.toggle('active', active);
+            node.querySelectorAll('div.node-status').forEach(function (status) { status.classList.toggle('active', active); });
+        });
+        Object.keys(charts).forEach(function (area) {
+            var nodes = charts[area].tree.nodeDB.db;
+            nodes.forEach(function (node) {
+                if (node.pseudo || !node.nodeHTMLid) return;
+                incomingConnectors(area, node).forEach(function (c) {
+                    ['active', area].forEach(function (cls) { colorConnector(c, cls, false); });
+                });
+            });
+            nodes.forEach(function (node) {
+                if (node.pseudo || !selected.has(node.nodeHTMLid)) return;
+                incomingConnectors(area, node).forEach(function (c) { colorConnector(c, 'active', true); });
+                realChildNodes(area, node).forEach(function (child) {
+                    incomingConnectors(area, child).forEach(function (c) { colorConnector(c, area, true); });
+                });
+            });
+        });
+        if (window.EmpireEval) window.EmpireEval.schedule();
+        if (save !== false) persist();
+    }
+    return { get: get, replace: replace, schedulePersist: function () {
+        clearTimeout(timer); timer = setTimeout(persist, 100);
+    }, restore: function () {
+        try {
+            var data = JSON.parse(localStorage.getItem(storageKey));
+            if (Array.isArray(data) && data.every(function (key) { return typeof key === 'string'; })) replace(data, false);
+        } catch (e) { /* An invalid snapshot must not prevent the trees loading. */ }
+    } };
+})();
 
 function getInitNode(node, name) {
     for (const count in node) {
@@ -273,7 +326,7 @@ function findLists() {
         }
         else {
             lists.forEach(item => {
-                $('#research_list').append('<option value="' + item.name + '">' + item.name + '</option>');
+                $('#research_list').append($('<option>').val(item.name).text(item.name));
             });
             $('#research_save').on('click', function(event) {
                 event.preventDefault();
@@ -308,11 +361,7 @@ function saveListToIndexedDB(name) {
     if(offlineDB) {
 
         var data = [];
-        research.forEach(area => {
-            $('.' + area + ' div.node-status.active').parent().not(':contains(\\(Starting\\))').each(function() {
-                data.push({key: $(this).attr('id'), area: area});
-            });
-        });
+        ResearchState.get().forEach(function (key) { data.push({ key: key, area: findChartArea(key) }); });
 
         var objectStore = offlineDB.transaction(["TreeStore"], "readwrite").objectStore("TreeStore");
 
@@ -328,8 +377,8 @@ function saveListToIndexedDB(name) {
         var result = objectStore.put({name: name, data: data, empire: empire});
         result.onsuccess = function(event) {
             if(event.target.result && name == event.target.result) {
-                if($('#research_list option[value="' + name + '"]').length === 0) {
-                    $('#research_list').append('<option value="' + name + '">' + name + '</option>');
+                if($('#research_list option').filter(function () { return this.value === name; }).length === 0) {
+                    $('#research_list').append($('<option>').val(name).text(name));
                 }
                 showToast('Research list "' + name + '" saved (' + data.length + ' techs'
                     + (empire ? ', incl. empire configuration' : '') + ').');
@@ -352,22 +401,10 @@ function loadListFromIndexedDB(name) {
         result.onsuccess = function(event) {
             if(event.target.result && event.target.result.data) {
                 var data = event.target.result.data;
-                research.forEach(area => {
-                    $('.' + area + ' div.node-status.active').parent().not(':contains(\\(Starting\\))').each(function() {
-                        updateResearch(area, $(this).attr('id'), false);
-                        $(this).find('div.node-status').removeClass('active');
-                    });
-                });
-                data.forEach(item => {
-                    if('anomaly' == item.area) {
-                        $('#' + item.key).addClass('active').find('div.node-status').addClass('active');
-                    }
-                    else {
-                        updateResearch(item.area, item.key, true);
-                    }
-                });
+                ResearchState.replace(data.map(function (item) { return item.key; }));
                 var empire = event.target.result.empire;
                 if(empire && window.EmpireConfig) {
+                    EmpireConfig.reset();
                     EmpireConfig.set(empire);
                 }
                 showToast('Research list "' + name + '" loaded (' + data.length + ' techs'
@@ -393,7 +430,7 @@ function removeListFromIndexedDB(name) {
             showToast('Unable to remove research list "' + name + '".', true);
         };
         result.onsuccess = function(event) {
-            $('option[value="' + name + '"]').remove();
+            $('#research_list option').filter(function () { return this.value === name; }).remove();
             if($.trim($('#research_selection').val()) == name) {
                 $('#research_selection').val('');
             }

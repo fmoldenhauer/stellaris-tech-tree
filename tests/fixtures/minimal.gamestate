@@ -1,0 +1,38 @@
+# Synthetic fixture. No private save data.
+version="Pegasus v4.4.6"
+date="2300.01.01"
+required_dlcs={ "Apocalypse" "Ancient Relics Story Pack" }
+player={ { name="Test player" country=7 } { name="Second player" country=42 } }
+country={
+  7={
+    name="Test \"Empire\" #1"
+    type=default
+    tech_status={
+      technology="tech_lasers_1" level=1
+      technology="tech_repeatable_improved_armor_output" level=4
+      technology="tech_mod_only" level=1
+      physics_queue={ { technology="tech_lasers_2" progress=12.5 } }
+      alternatives={ physics={ "tech_lasers_3" } }
+    }
+    ethos={ ethic="ethic_materialist" ethic="ethic_xenophile" }
+    government={ authority="auth_democratic" origin="origin_default" civics={ "civic_meritocracy" } council_positions={ 900000001 } }
+    ruler=4000000001
+    traditions={}
+    ascension_perks={ "ap_technological_ascendancy" }
+    flags={ volatile_motes_found=123 timed_flag={ flag_date=123 flag_days=10 } }
+    owned_planets={ 1 2 3 }
+    timed_modifier={ items={ { modifier="curator_insight" days=900 } } }
+    policy_flags={ "ai_outlawed" }
+    num_cosmic_storms_encountered=2
+    timeline_events={ government={ authority="auth_imperial" } technology="tech_not_researched" }
+  }
+  42={ name={ key="%ADJECTIVE%" } type=default tech_status={ technology="tech_shields_1" level=1 } }
+}
+council_positions={ council_positions={ 900000001={ country=7 leader=4000000002 type="councilor_research" } } }
+leaders={
+  4000000001={ country=7 traits="leader_trait_maniacal" }
+  4000000002={ country=7 traits="leader_trait_spark_of_genius_2" traits="leader_trait_expertise_materials_2" }
+  4000000003={ country=7 traits="leader_trait_curator" }
+  4000000004={ country=42 traits={ "leader_trait_psionic" } }
+}
+flags={ l_cluster_opened=321 }

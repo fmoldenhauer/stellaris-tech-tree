@@ -305,15 +305,17 @@ function _load(jsonData, tree) {
 }
 
 function load_tree() {
+    window.techTreesLoaded = false;
+    var pending = [];
     research.forEach( area => {
         if('anomaly' !== area) {
-            $.getJSON( area + '.json', function(jsonData) {
+            pending.push($.getJSON( area + '.json', function(jsonData) {
                 setup(jsonData);
                 _load(jsonData, area);
-            });
+            }));
         }
     });
-    $.getJSON('anomalies.json', function(jsonData) {
+    pending.push($.getJSON('anomalies.json', function(jsonData) {
         // Event techs form small chains - render them as a tree with connector
         // lines like the other pages. Rebuild parent/child links from the
         // prerequisites (the serialized children are incomplete and contain
@@ -358,6 +360,13 @@ function load_tree() {
             charts['anomalies-' + area] = new Treant({ chart: myconfig, nodeStructure: rootNode }, function() {}, $);
         });
         if (wasHidden) holder.classList.add('float-NoDisplay');
+    }));
+    $.when.apply($, pending).done(function () {
+        window.techTreesLoaded = true;
+        if (window.ResearchState) window.ResearchState.restore();
+        $(document).trigger('tech-trees-ready');
+    }).fail(function () {
+        showToast('Some technology data could not load. Reload before importing a save.', true);
     });
     if(window.indexedDB) {
         initDB();

@@ -112,7 +112,7 @@
       const load_page = (param, title) => {
         history.pushState({pageID: param}, param, `${param}/`);
         document.title = title || param;
-        var assets_version = '20260807a';
+        var assets_version = '20260905-save-import';
         $('<link>').appendTo('head').attr({
             type: 'text/css',
             rel: 'stylesheet',
@@ -121,29 +121,18 @@
         $('body').load('../assets/html/body.html', function() {
             $('#site-version').text('v' + assets_version);
             $('<script>').appendTo('head').attr({ src: '../assets/js/header.js?v=' + assets_version });
-            // empire-eval.js reads window.EmpireConfig, so load it strictly after empire-config.js
-            var empireConfig = document.createElement('script');
-            empireConfig.src = '../assets/js/empire-config.js?v=' + assets_version;
-            empireConfig.onload = function() {
-                var empireEval = document.createElement('script');
-                empireEval.src = '../assets/js/empire-eval.js?v=' + assets_version;
-                document.head.appendChild(empireEval);
-            };
-            document.head.appendChild(empireConfig);
-            // tech-tree.js calls into tech-tracking.js, so load them in order
-            var tracking = document.createElement('script');
-            tracking.src = '../assets/js/tech-tracking.js?v=' + assets_version;
-            tracking.onload = function() {
-                var tree = document.createElement('script');
-                tree.src = '../assets/js/tech-tree.js?v=' + assets_version;
-                tree.onload = function() {
-                    var empirePage = document.createElement('script');
-                    empirePage.src = '../assets/js/empire-page.js?v=' + assets_version;
-                    document.head.appendChild(empirePage);
-                };
-                document.head.appendChild(tree);
-            };
-            document.head.appendChild(tracking);
+            // Resolve dependencies before the Empire form can import or render.
+            var scripts = ['empire-config', 'empire-eval', 'tech-tracking', 'tech-tree',
+                'save-import-core', 'save-import-ui', 'empire-page'];
+            function loadNext() {
+                if (!scripts.length) return;
+                var script = document.createElement('script');
+                script.src = '../assets/js/' + scripts.shift() + '.js?v=' + assets_version;
+                script.onload = loadNext;
+                script.onerror = function() { showToast('A required script could not load. Reload the page to retry.', true); };
+                document.head.appendChild(script);
+            }
+            loadNext();
         });
       };
     </script>

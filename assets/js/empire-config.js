@@ -26,7 +26,9 @@
             traditions: [],
             council_traits: [],
             ascension_perks: [],
-            dlcs_disabled: []
+            dlcs_disabled: [],
+            known_fields: [],
+            save_context: null
         };
     }
 
@@ -60,6 +62,7 @@
     }
 
     var currentConfig = loadConfig();
+    var active = readStorage() !== null;
     var listeners = [];
     var debounceTimer = null;
 
@@ -99,7 +102,8 @@
                 if (Array.isArray(defaults[key])) {
                     out[key] = Array.isArray(val) ? val.slice() : defaults[key].slice();
                 } else {
-                    out[key] = (val === undefined) ? defaults[key] : val;
+                    out[key] = (val === undefined) ? defaults[key] :
+                        (val && typeof val === 'object' ? JSON.parse(JSON.stringify(val)) : val);
                 }
             });
             return out;
@@ -110,6 +114,7 @@
                 return;
             }
             var defaults = defaultConfig();
+            active = true;
             Object.keys(partialOrFull).forEach(function (key) {
                 if (Object.prototype.hasOwnProperty.call(defaults, key)) {
                     currentConfig[key] = partialOrFull[key];
@@ -120,8 +125,17 @@
         },
 
         reset: function () {
+            active = true;
             currentConfig = defaultConfig();
             persist();
+            notify();
+        },
+
+        isActive: function () { return active; },
+        clear: function () {
+            active = false;
+            currentConfig = defaultConfig();
+            try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
             notify();
         },
 
